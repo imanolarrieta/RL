@@ -1,26 +1,22 @@
-#!/usr/bin/env python
+
 """
-Domain Tutorial for RLPy
+Agent Tutorial for RLPy
 =================================
 
-Assumes you have created the ChainMDPTut.py domain according to the
-tutorial and placed it in the Domains/ directory.
-Tests the agent using SARSA with a tabular representation.
+Assumes you have created the SARSA0.py agent according to the tutorial and
+placed it in the current working directory.
+Tests the agent on the GridWorld domain.
 """
 __author__ = "Robert H. Klein"
-from rlpy.Domains import ChainMDP
-from rlpy.Agents import SARSA
+from rlpy.Domains import GridWorld
+from rlpy.Agents import UCRL
 from rlpy.Representations import Tabular
 from rlpy.Policies import eGreedy
 from rlpy.Experiments import Experiment
 import os
-import logging
 
 
-def make_experiment(exp_id=1, path="./Results/Tests/mdp_chain-sarsa",
-                    lambda_=0.,
-                    boyan_N0=10.25,
-                    initial_learn_rate=.6102):
+def make_experiment(exp_id=1, path="./Results/Tests/gridworld-ucrl"):
     """
     Each file specifying an experimental setup should contain a
     make_experiment function which returns an instance of the Experiment
@@ -34,24 +30,23 @@ def make_experiment(exp_id=1, path="./Results/Tests/mdp_chain-sarsa",
     opt["path"] = path
 
     ## Domain:
-    chainSize = 10
-    domain = ChainMDP(chainSize=chainSize)
+    maze = os.path.join(GridWorld.default_map_dir, '4x5.txt')
+    domain = GridWorld(maze, noise=0.1)
     opt["domain"] = domain
 
     ## Representation
     # discretization only needed for continuous state spaces, discarded otherwise
-    representation  = Tabular(domain)
+    representation  = Tabular(domain, discretization=20)
 
     ## Policy
     policy = eGreedy(representation, epsilon=0.2)
 
     ## Agent
-    opt["agent"] = SARSA(
-        policy, representation, discount_factor=domain.discount_factor,
-        lambda_=lambda_, initial_learn_rate=initial_learn_rate,
-        learn_rate_decay_mode="boyan", boyan_N0=boyan_N0)
-    opt["checks_per_policy"] = 50
-    opt["max_steps"] = 30000
+    opt["agent"] = UCRL(representation=representation, policy=policy,
+                   discount_factor=domain.discount_factor,
+                       initial_learn_rate=0.1)
+    opt["checks_per_policy"] = 100
+    opt["max_steps"] = 10000
     opt["num_policy_checks"] = 10
     experiment = Experiment(**opt)
     return experiment
@@ -59,7 +54,7 @@ def make_experiment(exp_id=1, path="./Results/Tests/mdp_chain-sarsa",
 if __name__ == '__main__':
     experiment = make_experiment(1)
     experiment.run(visualize_steps=False,  # should each learning step be shown?
-                   visualize_learning=True,  # show policy / value function?
+                   visualize_learning=False,  # show policy / value function?
                    visualize_performance=1)  # show performance runs?
     experiment.plot()
     experiment.save()
